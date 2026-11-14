@@ -1,0 +1,66 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource/roboto-mono/400.css";
+@import "@fontsource/roboto-mono/700.css";
+
+@theme {
+  --color-page: #140d0a;
+  --color-panel: #241612;
+  --color-brand: #d28a4c;
+  --color-copy: #f5f1eb;
+  --color-subtle: #cfb28c;
+  --color-line: #3f2319;
+}
+
+/* shadcn/ui semantic tokens mapped to the existing Kurio palette. */
+@theme inline {
+  --color-background: var(--color-page);
+  --color-foreground: var(--color-copy);
+  --color-popover: var(--color-panel);
+  --color-popover-foreground: var(--color-copy);
+  --color-primary: var(--color-brand);
+  --color-primary-foreground: var(--color-page);
+  --color-secondary: var(--color-panel);
+  --color-secondary-foreground: var(--color-copy);
+  --color-muted: var(--color-panel);
+  --color-muted-foreground: var(--color-subtle);
+  --color-accent: #352216;
+  --color-accent-foreground: var(--color-copy);
+  --color-destructive: #f0aa95;
+  --color-border: var(--color-line);
+  --color-input: var(--color-line);
+  --color-ring: var(--color-brand);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+:root {
+  font-family: "Roboto Mono", monospace;
+  color: var(--color-copy);
+  background-color: var(--color-page);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:not(:disabled),
+a {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 4px;
+}

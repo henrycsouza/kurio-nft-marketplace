@@ -1,0 +1,87 @@
+﻿import { test, expect, type Page } from '@playwright/test'
+
+async function enter(page: Page, email = 'colecionador@kurio.test') {
+  await page.getByRole('button', { name: 'Entrar ou criar conta' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.locator('input[name="email"]').fill(email)
+  await dialog.locator('input[name="password"]').fill('Kurio123!')
+  await dialog.locator('button.auth-submit').click()
+  await expect(dialog).toBeHidden()
+}
+
+test('rotas privadas exigem sessão e retomam destino com query e hash', async ({ page }) => {
+  for (const path of ['/profile', '/wallets#wallet-history', '/settings', '/favorites', '/checkout?scenario=declined', '/orders/pedido-inexistente']) {
+    await page.goto(path)
+    await expect(page).toHaveURL(/\/login\?/)
+    expect(new URL(page.url()).searchParams.get('redirect')).toBe(path)
+    await expect(page.getByRole('heading', { name: 'Entre para continuar' })).toBeVisible()
+  }
+  await page.goto('/wallets#wallet-history')
+  await enter(page)
+  await expect(page).toHaveURL(/\/wallets#wallet-history$/)
+  await expect(page.getByRole('heading', { name: 'Visão geral' })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Visão geral' })).toBeVisible()
+})
+
+test('expiração no pagamento preserva carrinho e permite retomada', async ({ page }) => {
+  await page.clock.install()
+  await page.goto('/nft/emerald-ape-042')
+  await page.getByRole('button', { name: /^(COMPRAR|Comprar NFT)$/ }).click()
+  await page.getByRole('link', { name: 'Continuar para pagamento' }).click()
+  await enter(page)
+  await expect(page.locator('.payment-wallet-option')).toHaveCount(2)
+  await page.clock.fastForward(31 * 60000)
+  await expect(page).toHaveURL(/\/login\?/)
+  expect(new URL(page.url()).searchParams.get('redirect')).toBe('/checkout')
+  await enter(page)
+  await expect(page).toHaveURL(/\/checkout$/)
+  await expect(page.locator('.payment-price')).toContainText('1.206')
+  await page.getByRole('button', { name: 'Confirmar compra', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Revise sua compra' })).toBeVisible()
+})
+
+test('logout e troca de conta isolam favoritos e destino externo é rejeitado', async ({ page }) => {
+  await page.goto('/favorites')
+  await enter(page)
+  await page.goto('/nft/emerald-ape-042')
+  await page.getByRole('button', { name: 'Favoritar Emerald Ape #042', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Remover Emerald Ape #042 dos favoritos', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await page.goto('/profile')
+  if (page.viewportSize()!.width < 1024) await page.getByRole('button', { name: 'Abrir navegação da conta' }).click()
+  await page.locator(page.viewportSize()!.width < 1024 ? '.account-mobile-logout' : '.collector-signout').click()
+  await expect(page).toHaveURL(/\/login\?/)
+  await enter(page, 'ana@kurio.test')
+  await expect(page.locator('input[name="email"]')).toHaveValue('ana@kurio.test')
+  await page.goto('/favorites')
+  await expect(page.getByText('Sua coleção de favoritos começa aqui')).toBeVisible()
+  await page.goto('/login?redirect=https%3A%2F%2Fexample.com')
+  await expect(page).toHaveURL(/\/profile$/)
+})
+
+test('timeout seguido de expiração recupera a mesma tentativa na mesma conta', async ({ page }) => {
+  test.setTimeout(90000)
+  await page.clock.install()
+  await page.goto('/nft/emerald-ape-042')
+  await page.getByRole('button', { name: /^(COMPRAR|Comprar NFT)$/ }).click()
+  await expect(page).toHaveURL(/\/cart$/)
+  await expect(page.locator('.cart-item')).toHaveCount(1)
+  await page.goto('/checkout?scenario=timeout')
+  await enter(page)
+  await expect(page.locator('.payment-wallet-option')).toHaveCount(2)
+  const keys: string[] = []
+  page.on('request', (request) => { if (request.method() === 'POST' && request.url().endsWith('/api/orders')) keys.push(request.headers()['idempotency-key']) })
+  await page.getByRole('button', { name: 'Confirmar compra', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Revise sua compra' }).getByRole('button', { name: 'Confirmar compra', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Recuperar minha compra' })).toBeEnabled()
+  await page.clock.fastForward(31 * 60000)
+  await expect(page).toHaveURL(/\/login\?/)
+  await enter(page)
+  await expect(page.getByRole('button', { name: 'Recuperar minha compra' })).toBeEnabled()
+  await page.getByRole('button', { name: 'Recuperar minha compra' }).click()
+  await expect(page.getByRole('dialog', { name: 'Seus NFTs agora estão na sua carteira' })).toBeVisible()
+  expect(keys).toHaveLength(2)
+  expect(keys[0]).toBeTruthy()
+  expect(keys[1]).toBe(keys[0])
+})
+
