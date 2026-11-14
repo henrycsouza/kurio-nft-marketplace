@@ -18,7 +18,7 @@ Marketplace de NFTs com descoberta de coleções, compra simulada e conta do col
 
 Projeto desenvolvido para um desafio frontend, com React e TypeScript. As APIs, autenticação, carteiras e pagamentos são simulados com MSW; as atualizações passam pelo cliente Socket.IO. Os dados da demonstração ficam no navegador de cada visitante.
 
-A implementação parte da [referência no Figma](https://www.figma.com/design/8Q3TygU996hKRTqWGylWJq/Untitled?node-id=0-1) e inclui decisões de UX documentadas, como concentrar a edição de dados pessoais no perfil e simplificar a revisão do pagamento.
+A implementação parte da [referência no Figma](https://www.figma.com/design/Ff0SksUi7UFtPWUO8kyNtw/Frontend-Challenge?node-id=0-1&p=f&t=D5IPAp0m1WeJvR1H-0) e inclui decisões de UX documentadas, como concentrar a edição de dados pessoais no perfil e simplificar a revisão do pagamento.
 
 ## Telas
 
